@@ -7,7 +7,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
-import Markdown
+import Markdown exposing (Options, defaultOptions, toHtmlWith)
 import Url
 import Url.Builder as UrlBuilder
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
@@ -179,18 +179,22 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        title =
+            "日常の記録"
+    in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.route of
         Articles articles ->
-            { title = "日常の記録"
+            { title = title
             , body = baseView (div [ class "siimple-grid-row" ] (List.map viewLi articles))
             }
 
         Content content ->
-            { title = "記事"
+            { title = title
             , body =
-                baseView (Markdown.toHtml [] content)
+                baseView (toHtmlWith options [] content)
             }
 
 
@@ -230,6 +234,11 @@ viewLi article =
             [ text article.title ]
         , div [ class "siimple-small" ] [ text article.createdAt ]
         ]
+
+
+options : Options
+options =
+    { defaultOptions | sanitize = True }
 
 
 
