@@ -182,27 +182,44 @@ view model =
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.route of
         Articles articles ->
-            { title = "一覧"
-            , body =
-                [ div []
-                    [ h2 [] [ text "一覧" ]
-                    , ul [] (List.map viewLi articles)
-                    ]
-                ]
+            { title = "日常の記録"
+            , body = baseView (ul [] (List.map viewLi articles))
             }
 
         Content content ->
             { title = "記事"
             , body =
-                [ Markdown.toHtml [] content ]
+                baseView (Markdown.toHtml [] content)
             }
+
+
+baseView : Html msg -> List (Html msg)
+baseView container =
+    [ div
+        [ class "siimple-navbar"
+        , class "siimple-navbar--extra-large"
+        , class "siimple-navbar--dark"
+        ]
+        [ a [ class "siimple-navbar-title ", href "/" ] [ text "日常の記録" ]
+        ]
+    , div
+        [ class "siimple-content"
+        , class "siimple-content--extra-large"
+        ]
+        [ container ]
+    ]
 
 
 viewLi : Article -> Html msg
 viewLi article =
     li []
         [ div []
-            [ a [ href ("#/content/" ++ String.fromInt article.id) ] [ text article.title ]
+            [ a
+                [ class "siimple-link"
+                , class "siimple--color-dark"
+                , href ("#/content/" ++ String.fromInt article.id)
+                ]
+                [ text article.title ]
             ]
         ]
 
