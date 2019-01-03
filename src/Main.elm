@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), articlesDecorder, fetchArticles, init, main, subscriptions, toBlogUrl, update, view)
+module Main exposing (Article, Model, Msg(..), Page(..), articlesDecorder, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, toBlogUrl, update, view, viewLi)
 
 import Browser
 import Browser.Navigation as Nav
@@ -37,9 +37,20 @@ type alias Model =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model key url (Articles [])
-    , fetchArticles
-    )
+    let
+        page =
+            parseUrl url
+    in
+    case page of
+        Articles article ->
+            ( Model key url page
+            , fetchArticles
+            )
+
+        Content id ->
+            ( Model key url (parseUrl url)
+            , fetchContent id
+            )
 
 
 
@@ -70,7 +81,17 @@ routeParser =
 
 parseUrl : Url.Url -> Page
 parseUrl url =
-    case parse routeParser url of
+    let
+        -- The RealWorld spec treats the fragment like a path.
+        -- This makes it *literally* the path, so we can proceed
+        -- with parsing as if it had been a normal path all along.
+        -- I refered This
+        -- https://github.com/rtfeldman/elm-spa-example/blob/b5064c6ef0fde3395a7299f238acf68f93e71d03/src/Route.elm#L59
+        parsed =
+            { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
+                |> parse routeParser
+    in
+    case parsed of
         Just page ->
             page
 
@@ -107,6 +128,7 @@ update msg model =
         ShowContent result ->
             case result of
                 Ok newContent ->
+                    -- TODO: when came here directly, some loading image shold be shown
                     ( { model | page = Content newContent }
                     , Cmd.none
                     )
@@ -128,18 +150,15 @@ update msg model =
             let
                 page =
                     parseUrl url
-
-                updated =
-                    { model | page = page }
             in
             case page of
                 Articles article ->
-                    ( updated
+                    ( model
                     , fetchArticles
                     )
 
                 Content id ->
-                    ( updated
+                    ( model
                     , fetchContent id
                     )
 
@@ -183,7 +202,7 @@ viewLi : Article -> Html msg
 viewLi article =
     li []
         [ div []
-            [ a [ href ("/content/" ++ String.fromInt article.id) ] [ text article.title ]
+            [ a [ href ("#/content/" ++ String.fromInt article.id) ] [ text article.title ]
             ]
         ]
 
