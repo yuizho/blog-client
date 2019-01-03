@@ -1,4 +1,4 @@
-module Main exposing (Article, Model, Msg(..), Page(..), articlesDecorder, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, toBlogUrl, update, view, viewLi)
+module Main exposing (Article, Model, Msg(..), Route(..), articlesDecorder, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, toBlogUrl, update, view, viewLi)
 
 import Browser
 import Browser.Navigation as Nav
@@ -31,19 +31,19 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
-    , page : Page
+    , route : Route
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     let
-        page =
+        route =
             parseUrl url
     in
-    case page of
+    case route of
         Articles article ->
-            ( Model key url page
+            ( Model key url route
             , fetchArticles
             )
 
@@ -63,7 +63,7 @@ type alias Article =
     }
 
 
-type Page
+type Route
     = Articles (List Article)
     | Content String
 
@@ -72,14 +72,14 @@ type Page
 -- Parser
 
 
-routeParser : Parser (Page -> a) a
+routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Content (s "content" </> string)
         ]
 
 
-parseUrl : Url.Url -> Page
+parseUrl : Url.Url -> Route
 parseUrl url =
     let
         -- The RealWorld spec treats the fragment like a path.
@@ -92,8 +92,8 @@ parseUrl url =
                 |> parse routeParser
     in
     case parsed of
-        Just page ->
-            page
+        Just route ->
+            route
 
         Nothing ->
             Articles []
@@ -116,7 +116,7 @@ update msg model =
         ShowArticles result ->
             case result of
                 Ok newArticle ->
-                    ( { model | page = Articles newArticle }
+                    ( { model | route = Articles newArticle }
                     , Cmd.none
                     )
 
@@ -129,7 +129,7 @@ update msg model =
             case result of
                 Ok newContent ->
                     -- TODO: when came here directly, some loading image shold be shown
-                    ( { model | page = Content newContent }
+                    ( { model | route = Content newContent }
                     , Cmd.none
                     )
 
@@ -148,10 +148,10 @@ update msg model =
 
         UrlChanged url ->
             let
-                page =
+                route =
                     parseUrl url
             in
-            case page of
+            case route of
                 Articles article ->
                     ( model
                     , fetchArticles
@@ -180,7 +180,7 @@ view : Model -> Browser.Document Msg
 view model =
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
-    case model.page of
+    case model.route of
         Articles articles ->
             { title = "一覧"
             , body =
