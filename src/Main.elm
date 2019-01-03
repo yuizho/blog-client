@@ -60,6 +60,7 @@ init flags url key =
 type alias Article =
     { title : String
     , id : Int
+    , createdAt : String
     }
 
 
@@ -183,7 +184,7 @@ view model =
     case model.route of
         Articles articles ->
             { title = "日常の記録"
-            , body = baseView (ul [] (List.map viewLi articles))
+            , body = baseView (div [ class "siimple-grid-row" ] (List.map viewLi articles))
             }
 
         Content content ->
@@ -197,30 +198,37 @@ baseView : Html msg -> List (Html msg)
 baseView container =
     [ div
         [ class "siimple-navbar"
-        , class "siimple-navbar--extra-large"
+        , class "siimple-navbar--large"
         , class "siimple-navbar--dark"
         ]
         [ a [ class "siimple-navbar-title ", href "/" ] [ text "日常の記録" ]
         ]
     , div
         [ class "siimple-content"
-        , class "siimple-content--extra-large"
+        , class "siimple-content--large"
         ]
         [ container ]
+    , div
+        [ class "siimple-footer"
+        , align "center"
+        ]
+        [ text "© 2019 Yui Ito" ]
     ]
 
 
 viewLi : Article -> Html msg
 viewLi article =
-    li []
-        [ div []
-            [ a
-                [ class "siimple-link"
-                , class "siimple--color-dark"
-                , href ("#/content/" ++ String.fromInt article.id)
-                ]
-                [ text article.title ]
+    div
+        [ class "siimple-grid-col"
+        , class "siimple-grid-col--9"
+        ]
+        [ a
+            [ class "siimple-link"
+            , class "siimple--color-dark"
+            , href ("#/content/" ++ String.fromInt article.id)
             ]
+            [ text article.title ]
+        , div [ class "siimple-small" ] [ text article.createdAt ]
         ]
 
 
@@ -243,9 +251,10 @@ toBlogUrl =
 articlesDecorder : Decode.Decoder (List Article)
 articlesDecorder =
     Decode.list
-        (Decode.map2 Article
+        (Decode.map3 Article
             (Decode.field "title" Decode.string)
             (Decode.field "id" Decode.int)
+            (Decode.field "added_at" Decode.string)
         )
 
 
