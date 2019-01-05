@@ -75,7 +75,7 @@ type alias Article =
 type Route
     = Articles (List Article)
     | LoadingContent String
-    | Content String String
+    | Content Article String
 
 
 
@@ -115,7 +115,7 @@ parseUrl url =
 
 type Msg
     = ShowArticles (Result Http.Error (List Article))
-    | ShowContent (Result Http.Error ( String, String ))
+    | ShowContent (Result Http.Error ( Article, String ))
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -211,7 +211,7 @@ view model =
             , body = baseView (div [] [])
             }
 
-        Content titleOfContent content ->
+        Content article content ->
             { title = title
             , body =
                 baseView
@@ -219,7 +219,8 @@ view model =
                         [ div
                             [ class "siimple-jumbotron"
                             ]
-                            [ div [ class "siimple-jumbotron-title" ] [ text titleOfContent ]
+                            [ div [ class "siimple-jumbotron-title" ] [ text article.title ]
+                            , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ article.createdAt ]
                             ]
                         , div
                             [ class "siimple-rule"
@@ -330,6 +331,9 @@ articleUrl id =
         []
 
 
-articleDecorder : Decode.Decoder String
+articleDecorder : Decode.Decoder Article
 articleDecorder =
-    Decode.field "title" Decode.string
+    Decode.map3 Article
+        (Decode.field "title" Decode.string)
+        (Decode.field "id" Decode.int)
+        (Decode.field "added_at" Decode.string)
