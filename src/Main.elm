@@ -1,4 +1,4 @@
-module Main exposing (Article, Model, Msg(..), Route(..), articlesDecorder, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, toBlogUrl, update, view, viewLi)
+module Main exposing (Article, Model, Msg(..), Route(..), articlesDecorder, articlesUrl, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, update, view, viewLi)
 
 import Browser
 import Browser.Navigation as Nav
@@ -7,7 +7,9 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
-import Markdown
+import Markdown exposing (Options, defaultOptions, toHtmlWith)
+import Task
+import Tuple
 import Url
 import Url.Builder as UrlBuilder
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
@@ -47,9 +49,15 @@ init flags url key =
             , fetchArticles
             )
 
-        Content id ->
+        LoadingContent id ->
             ( Model key url (parseUrl url)
             , fetchContent id
+            )
+
+        _ ->
+            -- TODO: show error
+            ( Model key url (parseUrl url)
+            , Cmd.none
             )
 
 
@@ -60,12 +68,14 @@ init flags url key =
 type alias Article =
     { title : String
     , id : Int
+    , createdAt : String
     }
 
 
 type Route
     = Articles (List Article)
-    | Content String
+    | LoadingContent String
+    | Content Article String
 
 
 
@@ -75,7 +85,7 @@ type Route
 routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
-        [ map Content (s "content" </> string)
+        [ map LoadingContent (s "content" </> string)
         ]
 
 
@@ -105,7 +115,7 @@ parseUrl url =
 
 type Msg
     = ShowArticles (Result Http.Error (List Article))
-    | ShowContent (Result Http.Error String)
+    | ShowContent (Result Http.Error ( Article, String ))
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -127,9 +137,9 @@ update msg model =
 
         ShowContent result ->
             case result of
-                Ok newContent ->
+                Ok container ->
                     -- TODO: when came here directly, some loading image shold be shown
-                    ( { model | route = Content newContent }
+                    ( { model | route = Content (Tuple.first container) (Tuple.second container) }
                     , Cmd.none
                     )
 
@@ -157,9 +167,15 @@ update msg model =
                     , fetchArticles
                     )
 
-                Content id ->
+                LoadingContent id ->
                     ( model
                     , fetchContent id
+                    )
+
+                _ ->
+                    -- TODO: show error
+                    ( model
+                    , Cmd.none
                     )
 
 
@@ -178,33 +194,86 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        title =
+            "日常の記録"
+    in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.route of
         Articles articles ->
-            { title = "一覧"
-            , body =
-                [ div []
-                    [ h2 [] [ text "一覧" ]
-                    , ul [] (List.map viewLi articles)
-                    ]
-                ]
+            { title = title
+            , body = baseView (div [ class "siimple-grid-row" ] (List.map viewLi articles))
             }
 
-        Content content ->
-            { title = "記事"
-            , body =
-                [ Markdown.toHtml [] content ]
+        LoadingContent _ ->
+            { title = title
+            , body = baseView (div [ class "siimple-spinner", class "siimple-spinner--dark" ] [])
             }
+
+        Content article content ->
+            { title = title
+            , body =
+                baseView
+                    (div []
+                        [ div
+                            [ class "siimple-jumbotron"
+                            ]
+                            [ div [ class "siimple-jumbotron-title" ] [ text article.title ]
+                            , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ article.createdAt ]
+                            ]
+                        , div
+                            [ class "siimple-rule"
+                            , class "siimple--color-dark"
+                            ]
+                            []
+                        , toHtmlWith options [] content
+                        ]
+                    )
+            }
+
+
+baseView : Html msg -> List (Html msg)
+baseView container =
+    [ div
+        [ class "siimple-navbar"
+        , class "siimple-navbar--large"
+        , class "siimple-navbar--dark"
+        ]
+        [ a [ class "siimple-navbar-title ", href "/" ] [ text "日常の記録" ]
+        ]
+    , div
+        [ class "siimple-content"
+        , class "siimple-content--large"
+        ]
+        [ container ]
+    , div
+        [ class "siimple-footer"
+        , align "center"
+        ]
+        [ text "© 2019 Yui Ito" ]
+    ]
 
 
 viewLi : Article -> Html msg
 viewLi article =
-    li []
-        [ div []
-            [ a [ href ("#/content/" ++ String.fromInt article.id) ] [ text article.title ]
-            ]
+    div
+        [ class "siimple-grid-col"
+        , class "siimple-grid-col--9"
         ]
+        [ a
+            [ class "siimple-link"
+            , class "siimple--color-dark"
+            , href ("#/content/" ++ String.fromInt article.id)
+            ]
+            [ text article.title ]
+        , div [ class "siimple-small" ] [ text article.createdAt ]
+        ]
+
+
+options : Options
+options =
+    { defaultOptions | sanitize = True }
 
 
 
@@ -213,11 +282,11 @@ viewLi article =
 
 fetchArticles : Cmd Msg
 fetchArticles =
-    Http.send ShowArticles (Http.get toBlogUrl articlesDecorder)
+    Http.send ShowArticles (Http.get articlesUrl articlesDecorder)
 
 
-toBlogUrl : String
-toBlogUrl =
+articlesUrl : String
+articlesUrl =
     UrlBuilder.crossOrigin "http://localhost:8080"
         [ "api", "articles" ]
         []
@@ -226,15 +295,26 @@ toBlogUrl =
 articlesDecorder : Decode.Decoder (List Article)
 articlesDecorder =
     Decode.list
-        (Decode.map2 Article
+        (Decode.map3 Article
             (Decode.field "title" Decode.string)
             (Decode.field "id" Decode.int)
+            (Decode.field "added_at" Decode.string)
         )
 
 
 fetchContent : String -> Cmd Msg
 fetchContent id =
-    Http.send ShowContent <| Http.getString <| contentUrl id
+    let
+        articleTask =
+            Http.get (articleUrl id) articleDecorder |> Http.toTask
+
+        contentTask =
+            Http.getString (contentUrl id) |> Http.toTask
+    in
+    -- I refer this redit
+    -- https://www.reddit.com/r/elm/comments/91t937/is_it_possible_to_make_multiple_http_requests_in/
+    Task.attempt ShowContent <|
+        Task.map2 (\article content -> ( article, content )) articleTask contentTask
 
 
 contentUrl : String -> String
@@ -242,3 +322,18 @@ contentUrl id =
     UrlBuilder.crossOrigin "http://localhost:8080"
         [ "api", "articles", id, "content" ]
         []
+
+
+articleUrl : String -> String
+articleUrl id =
+    UrlBuilder.crossOrigin "http://localhost:8080"
+        [ "api", "articles", id ]
+        []
+
+
+articleDecorder : Decode.Decoder Article
+articleDecorder =
+    Decode.map3 Article
+        (Decode.field "title" Decode.string)
+        (Decode.field "id" Decode.int)
+        (Decode.field "added_at" Decode.string)
