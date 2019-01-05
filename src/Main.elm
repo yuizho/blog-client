@@ -1,4 +1,4 @@
-module Main exposing (Article, Model, Msg(..), Route(..), articlesDecorder, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, toBlogUrl, update, view, viewLi)
+module Main exposing (Article, Model, Msg(..), Route(..), articlesDecorder, articlesUrl, contentUrl, fetchArticles, fetchContent, init, main, parseUrl, routeParser, subscriptions, update, view, viewLi)
 
 import Browser
 import Browser.Navigation as Nav
@@ -8,6 +8,8 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
 import Markdown exposing (Options, defaultOptions, toHtmlWith)
+import Task
+import Tuple
 import Url
 import Url.Builder as UrlBuilder
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
@@ -47,9 +49,14 @@ init flags url key =
             , fetchArticles
             )
 
-        Content id ->
+        LoadingContent id ->
             ( Model key url (parseUrl url)
             , fetchContent id
+            )
+
+        Content _ _ ->
+            ( Model key url (parseUrl url)
+            , Cmd.none
             )
 
 
@@ -66,7 +73,8 @@ type alias Article =
 
 type Route
     = Articles (List Article)
-    | Content String
+    | LoadingContent String
+    | Content String String
 
 
 
@@ -76,7 +84,7 @@ type Route
 routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
-        [ map Content (s "content" </> string)
+        [ map LoadingContent (s "content" </> string)
         ]
 
 
@@ -106,7 +114,7 @@ parseUrl url =
 
 type Msg
     = ShowArticles (Result Http.Error (List Article))
-    | ShowContent (Result Http.Error String)
+    | ShowContent (Result Http.Error ( String, String ))
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -128,9 +136,9 @@ update msg model =
 
         ShowContent result ->
             case result of
-                Ok newContent ->
+                Ok container ->
                     -- TODO: when came here directly, some loading image shold be shown
-                    ( { model | route = Content newContent }
+                    ( { model | route = Content (Tuple.first container) (Tuple.second container) }
                     , Cmd.none
                     )
 
@@ -158,9 +166,14 @@ update msg model =
                     , fetchArticles
                     )
 
-                Content id ->
+                LoadingContent id ->
                     ( model
                     , fetchContent id
+                    )
+
+                Content _ _ ->
+                    ( model
+                    , Cmd.none
                     )
 
 
@@ -191,10 +204,29 @@ view model =
             , body = baseView (div [ class "siimple-grid-row" ] (List.map viewLi articles))
             }
 
-        Content content ->
+        LoadingContent id ->
+            { title = title
+            , body = baseView (div [] [])
+            }
+
+        Content titleOfContent content ->
             { title = title
             , body =
-                baseView (toHtmlWith options [] content)
+                baseView
+                    (div []
+                        [ div
+                            [ class "siimple-jumbotron"
+                            ]
+                            [ div [ class "siimple-jumbotron-title" ] [ text titleOfContent ]
+                            ]
+                        , div
+                            [ class "siimple-rule"
+                            , class "siimple--color-dark"
+                            ]
+                            []
+                        , toHtmlWith options [] content
+                        ]
+                    )
             }
 
 
@@ -247,11 +279,11 @@ options =
 
 fetchArticles : Cmd Msg
 fetchArticles =
-    Http.send ShowArticles (Http.get toBlogUrl articlesDecorder)
+    Http.send ShowArticles (Http.get articlesUrl articlesDecorder)
 
 
-toBlogUrl : String
-toBlogUrl =
+articlesUrl : String
+articlesUrl =
     UrlBuilder.crossOrigin "http://localhost:8080"
         [ "api", "articles" ]
         []
@@ -269,7 +301,15 @@ articlesDecorder =
 
 fetchContent : String -> Cmd Msg
 fetchContent id =
-    Http.send ShowContent <| Http.getString <| contentUrl id
+    let
+        contentTask =
+            Http.getString (contentUrl id) |> Http.toTask
+
+        articleTask =
+            Http.get (articleUrl id) articleDecorder |> Http.toTask
+    in
+    Task.attempt ShowContent <|
+        Task.map2 (\content article -> ( article, content )) contentTask articleTask
 
 
 contentUrl : String -> String
@@ -277,3 +317,15 @@ contentUrl id =
     UrlBuilder.crossOrigin "http://localhost:8080"
         [ "api", "articles", id, "content" ]
         []
+
+
+articleUrl : String -> String
+articleUrl id =
+    UrlBuilder.crossOrigin "http://localhost:8080"
+        [ "api", "articles", id ]
+        []
+
+
+articleDecorder : Decode.Decoder String
+articleDecorder =
+    Decode.field "title" Decode.string
