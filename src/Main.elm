@@ -54,7 +54,8 @@ init flags url key =
             , fetchContent id
             )
 
-        Content _ _ ->
+        _ ->
+            -- TODO: show error
             ( Model key url (parseUrl url)
             , Cmd.none
             )
@@ -171,7 +172,8 @@ update msg model =
                     , fetchContent id
                     )
 
-                Content _ _ ->
+                _ ->
+                    -- TODO: show error
                     ( model
                     , Cmd.none
                     )
@@ -302,14 +304,16 @@ articlesDecorder =
 fetchContent : String -> Cmd Msg
 fetchContent id =
     let
-        contentTask =
-            Http.getString (contentUrl id) |> Http.toTask
-
         articleTask =
             Http.get (articleUrl id) articleDecorder |> Http.toTask
+
+        contentTask =
+            Http.getString (contentUrl id) |> Http.toTask
     in
+    -- I refer this redit
+    -- https://www.reddit.com/r/elm/comments/91t937/is_it_possible_to_make_multiple_http_requests_in/
     Task.attempt ShowContent <|
-        Task.map2 (\content article -> ( article, content )) contentTask articleTask
+        Task.map2 (\article content -> ( article, content )) articleTask contentTask
 
 
 contentUrl : String -> String
