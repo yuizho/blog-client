@@ -206,9 +206,9 @@ view model =
             , body = baseView (div [ class "siimple-grid-row" ] (List.map viewLi articles))
             }
 
-        LoadingContent id ->
+        LoadingContent _ ->
             { title = title
-            , body = baseView (div [] [])
+            , body = baseView (div [ class "siimple-spinner", class "siimple-spinner--dark" ] [])
             }
 
         Content article content ->
