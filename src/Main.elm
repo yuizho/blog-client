@@ -1,4 +1,4 @@
-module Main exposing (Article, Model, Msg(..), Page(..), articlesDecorder, articlesUrl, contentUrl, fetchArticles, fetchContent, init, main, routeParser, routeUrl, subscriptions, update, view, viewLi)
+module Main exposing (main)
 
 import Browser
 import Browser.Navigation as Nav
@@ -8,11 +8,13 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
 import Markdown exposing (Options, defaultOptions, toHtmlWith)
+import Page.Article as Article
+import Page.ArticleList as ArticleList
 import Task
 import Tuple
 import Url
 import Url.Builder as UrlBuilder
-import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
+import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string, top)
 
 
 
@@ -37,59 +39,17 @@ type alias Model =
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
-    let
-        page =
-            routeUrl url
-    in
-    case page of
-        Articles article ->
-            ( Model key page
-            , fetchArticles
-            )
-
-        LoadingContent id ->
-            ( Model key page
-            , fetchContent id
-            )
-
-        _ ->
-            -- TODO: show error
-            ( Model key page
-            , Cmd.none
-            )
-
-
-
--- Article
-
-
-type alias Article =
-    { title : String
-    , id : Int
-    , createdAt : String
-    }
+init _ url key =
+    routeUrl url <| Model key <| ArticleListPage (ArticleList.Model [])
 
 
 type Page
-    = Articles (List Article)
-    | LoadingContent String
-    | Content Article String
+    = ArticleListPage ArticleList.Model
+    | ArticlePage Article.Model
 
 
-
--- Parser
-
-
-routeParser : Parser (Page -> a) a
-routeParser =
-    oneOf
-        [ map LoadingContent (s "content" </> string)
-        ]
-
-
-routeUrl : Url.Url -> Page
-routeUrl url =
+routeUrl : Url.Url -> Model -> ( Model, Cmd Msg )
+routeUrl url model =
     let
         -- The RealWorld spec treats the fragment like a path.
         -- This makes it *literally* the path, so we can proceed
@@ -98,14 +58,45 @@ routeUrl url =
         -- https://github.com/rtfeldman/elm-spa-example/blob/b5064c6ef0fde3395a7299f238acf68f93e71d03/src/Route.elm#L59
         parsed =
             { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
-                |> parse routeParser
+                |> parse (routeParser model)
     in
     case parsed of
-        Just page ->
-            page
+        Just result ->
+            result
 
         Nothing ->
-            Articles []
+            ( { model | page = ArticleListPage (ArticleList.Model []) }
+            , Cmd.none
+            )
+
+
+routeParser : Model -> Parser (( Model, Cmd Msg ) -> a) a
+routeParser model =
+    oneOf
+        [ route top
+            (stepArticleList model ArticleList.init)
+        , route (s "content" </> string)
+            (\id -> stepArticle model (Article.init id))
+        ]
+
+
+route : Parser a b -> a -> Parser (b -> c) c
+route parser handler =
+    map handler parser
+
+
+stepArticleList : Model -> ( ArticleList.Model, Cmd ArticleList.Msg ) -> ( Model, Cmd Msg )
+stepArticleList model ( articlelist, cmds ) =
+    ( { model | page = ArticleListPage articlelist }
+    , Cmd.map GoArticleList cmds
+    )
+
+
+stepArticle : Model -> ( Article.Model, Cmd Article.Msg ) -> ( Model, Cmd Msg )
+stepArticle model ( article, cmds ) =
+    ( { model | page = ArticlePage article }
+    , Cmd.map GoArticle cmds
+    )
 
 
 
@@ -113,8 +104,8 @@ routeUrl url =
 
 
 type Msg
-    = ShowArticles (Result Http.Error (List Article))
-    | ShowContent (Result Http.Error ( Article, String ))
+    = GoArticleList ArticleList.Msg
+    | GoArticle Article.Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -122,30 +113,21 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ShowArticles result ->
-            case result of
-                Ok newArticle ->
-                    ( { model | page = Articles newArticle }
-                    , Cmd.none
-                    )
+        GoArticleList subMsg ->
+            case model.page of
+                ArticleListPage article ->
+                    stepArticleList model (ArticleList.update subMsg article)
 
-                Err _ ->
-                    ( model
-                    , Cmd.none
-                    )
+                _ ->
+                    ( model, Cmd.none )
 
-        ShowContent result ->
-            case result of
-                Ok container ->
-                    -- TODO: when came here directly, some loading image shold be shown
-                    ( { model | page = Content (Tuple.first container) (Tuple.second container) }
-                    , Cmd.none
-                    )
+        GoArticle subMsg ->
+            case model.page of
+                ArticlePage article ->
+                    stepArticle model (Article.update subMsg article)
 
-                Err _ ->
-                    ( model
-                    , Cmd.none
-                    )
+                _ ->
+                    ( model, Cmd.none )
 
         LinkClicked urlRequest ->
             case urlRequest of
@@ -156,26 +138,7 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            let
-                page =
-                    routeUrl url
-            in
-            case page of
-                Articles article ->
-                    ( model
-                    , fetchArticles
-                    )
-
-                LoadingContent id ->
-                    ( model
-                    , fetchContent id
-                    )
-
-                _ ->
-                    -- TODO: show error
-                    ( model
-                    , Cmd.none
-                    )
+            routeUrl url model
 
 
 
@@ -193,43 +156,20 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        title =
-            "日常の記録"
-    in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.page of
-        Articles articles ->
-            { title = title
-            , body = baseView (div [ class "siimple-grid-row" ] (List.map viewLi articles))
-            }
+        ArticleListPage subModel ->
+            baseHtml <| ArticleList.view subModel
 
-        LoadingContent _ ->
-            { title = title
-            , body = baseView (div [ class "siimple-spinner", class "siimple-spinner--dark" ] [])
-            }
+        ArticlePage subModel ->
+            baseHtml <| Article.view subModel
 
-        Content article content ->
-            { title = title
-            , body =
-                baseView
-                    (div []
-                        [ div
-                            [ class "siimple-jumbotron"
-                            ]
-                            [ div [ class "siimple-jumbotron-title" ] [ text article.title ]
-                            , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ article.createdAt ]
-                            ]
-                        , div
-                            [ class "siimple-rule"
-                            , class "siimple--color-dark"
-                            ]
-                            []
-                        , toHtmlWith options [] content
-                        ]
-                    )
-            }
+
+baseHtml content =
+    { title = "日常の記録"
+    , body = baseView <| content
+    }
 
 
 baseView : Html msg -> List (Html msg)
@@ -252,87 +192,3 @@ baseView container =
         ]
         [ text "© 2019 Yui Ito" ]
     ]
-
-
-viewLi : Article -> Html msg
-viewLi article =
-    div
-        [ class "siimple-grid-col"
-        , class "siimple-grid-col--9"
-        ]
-        [ a
-            [ class "siimple-link"
-            , class "siimple--color-dark"
-            , href ("#/content/" ++ String.fromInt article.id)
-            ]
-            [ text article.title ]
-        , div [ class "siimple-small" ] [ text article.createdAt ]
-        ]
-
-
-options : Options
-options =
-    { defaultOptions | sanitize = True }
-
-
-
--- HTTP
-
-
-fetchArticles : Cmd Msg
-fetchArticles =
-    Http.send ShowArticles (Http.get articlesUrl articlesDecorder)
-
-
-articlesUrl : String
-articlesUrl =
-    UrlBuilder.crossOrigin "http://localhost:8080"
-        [ "api", "articles" ]
-        []
-
-
-articlesDecorder : Decode.Decoder (List Article)
-articlesDecorder =
-    Decode.list
-        (Decode.map3 Article
-            (Decode.field "title" Decode.string)
-            (Decode.field "id" Decode.int)
-            (Decode.field "added_at" Decode.string)
-        )
-
-
-fetchContent : String -> Cmd Msg
-fetchContent id =
-    let
-        articleTask =
-            Http.get (articleUrl id) articleDecorder |> Http.toTask
-
-        contentTask =
-            Http.getString (contentUrl id) |> Http.toTask
-    in
-    -- I refer this redit
-    -- https://www.reddit.com/r/elm/comments/91t937/is_it_possible_to_make_multiple_http_requests_in/
-    Task.attempt ShowContent <|
-        Task.map2 (\article content -> ( article, content )) articleTask contentTask
-
-
-contentUrl : String -> String
-contentUrl id =
-    UrlBuilder.crossOrigin "http://localhost:8080"
-        [ "api", "articles", id, "content" ]
-        []
-
-
-articleUrl : String -> String
-articleUrl id =
-    UrlBuilder.crossOrigin "http://localhost:8080"
-        [ "api", "articles", id ]
-        []
-
-
-articleDecorder : Decode.Decoder Article
-articleDecorder =
-    Decode.map3 Article
-        (Decode.field "title" Decode.string)
-        (Decode.field "id" Decode.int)
-        (Decode.field "added_at" Decode.string)
