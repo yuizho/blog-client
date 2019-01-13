@@ -75,7 +75,7 @@ viewArticle article =
         [ a
             [ class "siimple-link"
             , class "siimple--color-dark"
-            , href ("#/content/" ++ String.fromInt article.id)
+            , href ("#/article/" ++ String.fromInt article.id)
             ]
             [ text article.title ]
         , div [ class "siimple-small" ] [ text article.createdAt ]

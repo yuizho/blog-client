@@ -75,7 +75,7 @@ routeParser model =
     oneOf
         [ route top
             (stepArticleList model ArticleList.init)
-        , route (s "content" </> string)
+        , route (s "article" </> string)
             (\id -> stepArticle model (Article.init id))
         ]
 
