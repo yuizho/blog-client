@@ -63,11 +63,11 @@ update msg model =
 
 view : Model -> Html msg
 view model =
-    div [ class "siimple-grid-row" ] (List.map viewLi model.articles)
+    div [ class "siimple-grid-row" ] (List.map viewArticle model.articles)
 
 
-viewLi : Article -> Html msg
-viewLi article =
+viewArticle : Article -> Html msg
+viewArticle article =
     div
         [ class "siimple-grid-col"
         , class "siimple-grid-col--9"
@@ -75,7 +75,7 @@ viewLi article =
         [ a
             [ class "siimple-link"
             , class "siimple--color-dark"
-            , href ("#/content/" ++ String.fromInt article.id)
+            , href ("#/article/" ++ String.fromInt article.id)
             ]
             [ text article.title ]
         , div [ class "siimple-small" ] [ text article.createdAt ]

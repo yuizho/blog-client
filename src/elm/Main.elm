@@ -75,7 +75,7 @@ routeParser model =
     oneOf
         [ route top
             (stepArticleList model ArticleList.init)
-        , route (s "content" </> string)
+        , route (s "article" </> string)
             (\id -> stepArticle model (Article.init id))
         ]
 
@@ -156,30 +156,34 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        title =
+            "日常の記録"
+    in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.page of
         ArticleListPage subModel ->
-            baseHtml <| ArticleList.view subModel
+            baseHtml title <| ArticleList.view subModel
 
         ArticlePage subModel ->
-            baseHtml <| Article.view subModel
+            baseHtml title <| Article.view subModel
 
 
-baseHtml content =
-    { title = "日常の記録"
-    , body = baseView <| content
+baseHtml title content =
+    { title = title
+    , body = baseView title <| content
     }
 
 
-baseView : Html msg -> List (Html msg)
-baseView container =
+baseView : String -> Html msg -> List (Html msg)
+baseView title container =
     [ div
         [ class "siimple-navbar"
         , class "siimple-navbar--large"
         , class "siimple-navbar--dark"
         ]
-        [ a [ class "siimple-navbar-title ", href "/" ] [ text "日常の記録" ]
+        [ a [ class "siimple-navbar-title ", href "/" ] [ text title ]
         ]
     , div
         [ class "siimple-content"
