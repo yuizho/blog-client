@@ -111,6 +111,12 @@ if (MODE === "development") {
             stats: "errors-only",
             contentBase: path.join(__dirname, "src/assets"),
             historyApiFallback: true,
+            // add proxy configuration to avoid cross origin restriction
+            proxy: {
+                '/api': {
+                    target: 'http://localhost:8080'
+                }
+            },
             // feel free to delete this section if you don't need anything like this
             before(app) {
                 // on port 3000
@@ -126,7 +132,8 @@ if (MODE === "production") {
     module.exports = merge(common, {
         plugins: [
             // Minify elm code
-            new elmMinify.WebpackPlugin(),
+            // TODO: when this plugin is enabled, build is failed
+            //new elmMinify.WebpackPlugin(),
             // Delete everything from /dist directory and report to user
             new CleanWebpackPlugin(["dist"], {
                 root: __dirname,
