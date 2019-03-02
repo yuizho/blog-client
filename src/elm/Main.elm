@@ -10,6 +10,7 @@ import Json.Decode as Decode
 import Markdown exposing (Options, defaultOptions, toHtmlWith)
 import Page.Article as Article
 import Page.ArticleList as ArticleList
+import RemoteData
 import Task
 import Tuple
 import Url
@@ -40,7 +41,7 @@ type alias Model =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    routeUrl url <| Model key <| ArticleListPage (ArticleList.Model [])
+    routeUrl url <| Model key <| ArticleListPage (ArticleList.Model RemoteData.NotAsked)
 
 
 type Page
@@ -65,7 +66,7 @@ routeUrl url model =
             result
 
         Nothing ->
-            ( { model | page = ArticleListPage (ArticleList.Model []) }
+            ( { model | page = ArticleListPage (ArticleList.Model RemoteData.NotAsked) }
             , Cmd.none
             )
 
