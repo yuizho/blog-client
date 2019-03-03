@@ -3,6 +3,7 @@ module Page.Article exposing (Model, Msg, init, update, view)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Keyed as Keyed
 import Http
 import Json.Decode as Decode
 import Markdown exposing (Options, defaultOptions, toHtmlWith)
@@ -25,12 +26,13 @@ type alias Model =
 type alias ArticleInfo =
     { title : String
     , createdAt : String
+    , tags : List String
     }
 
 
 init : String -> ( Model, Cmd Msg )
 init id =
-    ( Model (ArticleInfo "" "") ""
+    ( Model (ArticleInfo "" "" []) ""
     , fetchContent id
     )
 
@@ -72,6 +74,7 @@ view model =
             ]
             [ div [ class "siimple-jumbotron-title" ] [ text model.articleInfo.title ]
             , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ model.articleInfo.createdAt ]
+            , Keyed.node "div" [] (List.indexedMap viewTagElements model.articleInfo.tags)
             ]
         , div
             [ class "siimple-rule"
@@ -80,6 +83,20 @@ view model =
             []
         , toHtmlWith options [] model.content
         ]
+
+
+viewTagElements : Int -> String -> ( String, Html msg )
+viewTagElements index tag =
+    ( String.fromInt index
+    , span
+        [ class "siimple-tag"
+        , class "siimple-tag--primary"
+        , class "siimple-tag--rounded"
+        , class "siimple--mt-2"
+        , class "siimple--mr-1"
+        ]
+        [ text tag ]
+    )
 
 
 options : Options
@@ -122,6 +139,7 @@ articleUrl id =
 
 articleDecorder : Decode.Decoder ArticleInfo
 articleDecorder =
-    Decode.map2 ArticleInfo
+    Decode.map3 ArticleInfo
         (Decode.field "title" Decode.string)
         (Decode.field "added_at" Decode.string)
+        (Decode.field "tag_names" (Decode.list Decode.string))

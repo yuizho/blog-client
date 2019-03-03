@@ -3,6 +3,7 @@ module Page.ArticleList exposing (Model, Msg, init, update, view)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Keyed as Keyed
 import Http
 import Json.Decode as Decode
 import RemoteData exposing (RemoteData(..), WebData)
@@ -22,6 +23,7 @@ type alias Article =
     { title : String
     , id : Int
     , createdAt : String
+    , tags : List String
     }
 
 
@@ -99,7 +101,22 @@ viewArticle article =
             ]
             [ text article.title ]
         , div [ class "siimple-small" ] [ text article.createdAt ]
+        , Keyed.node "div" [] (List.indexedMap viewTagElements article.tags)
         ]
+
+
+viewTagElements : Int -> String -> ( String, Html msg )
+viewTagElements index tag =
+    ( String.fromInt index
+    , span
+        [ class "siimple-tag"
+        , class "siimple-tag--primary"
+        , class "siimple-tag--rounded"
+        , class "siimple--mt-2"
+        , class "siimple--mr-1"
+        ]
+        [ text tag ]
+    )
 
 
 
@@ -121,8 +138,9 @@ articlesUrl =
 articlesDecorder : Decode.Decoder (List Article)
 articlesDecorder =
     Decode.list
-        (Decode.map3 Article
+        (Decode.map4 Article
             (Decode.field "title" Decode.string)
             (Decode.field "id" Decode.int)
             (Decode.field "added_at" Decode.string)
+            (Decode.field "tag_names" (Decode.list Decode.string))
         )
