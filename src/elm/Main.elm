@@ -109,6 +109,7 @@ type Msg
     | GoArticle Article.Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | ArticleListUpdate ArticleList.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -141,6 +142,14 @@ update msg model =
         UrlChanged url ->
             routeUrl url model
 
+        ArticleListUpdate subMsg ->
+            case model.page of
+                ArticleListPage article ->
+                    stepArticleList model (ArticleList.update subMsg article)
+
+                _ ->
+                    ( model, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -165,7 +174,7 @@ view model =
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.page of
         ArticleListPage subModel ->
-            baseHtml title <| ArticleList.view subModel
+            baseHtml title (Html.map (\subMsg -> ArticleListUpdate subMsg) <| ArticleList.view subModel)
 
         ArticlePage subModel ->
             baseHtml title <| Article.view subModel

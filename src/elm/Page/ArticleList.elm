@@ -40,6 +40,7 @@ init =
 
 type Msg
     = ShowArticles (WebData (List Article))
+    | ClickTag String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -50,12 +51,15 @@ update msg model =
             , Cmd.none
             )
 
+        ClickTag tag ->
+            ( model, fetchArticlesWithTag tag )
+
 
 
 -- VIEW
 
 
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
     let
         contents =
@@ -88,7 +92,7 @@ view model =
     div [ class "siimple-grid-row" ] contents
 
 
-viewArticle : Article -> Html msg
+viewArticle : Article -> Html Msg
 viewArticle article =
     div
         [ class "siimple-grid-col"
@@ -105,7 +109,7 @@ viewArticle article =
         ]
 
 
-viewTagElements : Int -> String -> ( String, Html msg )
+viewTagElements : Int -> String -> ( String, Html Msg )
 viewTagElements index tag =
     ( String.fromInt index
     , span
@@ -114,6 +118,8 @@ viewTagElements index tag =
         , class "siimple-tag--rounded"
         , class "siimple--mt-2"
         , class "siimple--mr-1"
+        , class "pointer-hand"
+        , onClick (ClickTag tag)
         ]
         [ text tag ]
     )
@@ -133,6 +139,18 @@ articlesUrl =
     UrlBuilder.crossOrigin "http://localhost:8080"
         [ "api", "articles" ]
         []
+
+
+fetchArticlesWithTag : String -> Cmd Msg
+fetchArticlesWithTag tag =
+    Http.send (RemoteData.fromResult >> ShowArticles) (Http.get (articlesUrlWithTag tag) articlesDecorder)
+
+
+articlesUrlWithTag : String -> String
+articlesUrlWithTag tag =
+    UrlBuilder.crossOrigin "http://localhost:8080"
+        [ "api", "articles" ]
+        [ UrlBuilder.string "tags" tag ]
 
 
 articlesDecorder : Decode.Decoder (List Article)
