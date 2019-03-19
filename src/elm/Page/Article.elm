@@ -8,6 +8,7 @@ import Html.Keyed as Keyed
 import Http
 import Json.Decode as Decode
 import Markdown exposing (Options, defaultOptions, toHtmlWith)
+import RemoteData exposing (RemoteData(..), WebData)
 import Task
 import Url.Builder as UrlBuilder
 
@@ -17,11 +18,8 @@ import Url.Builder as UrlBuilder
 
 
 type alias Model =
-    { articleInfo : ArticleInfo
-    , content : String
+    { articleInfo : WebData ArticleInfo
     , config : Config
-
-    -- TOOD: ここでLoadking状態とかもたせればよさげ。
     }
 
 
@@ -29,12 +27,13 @@ type alias ArticleInfo =
     { title : String
     , createdAt : String
     , tags : List String
+    , content : String
     }
 
 
 init : Config -> String -> ( Model, Cmd Msg )
 init config id =
-    ( Model (ArticleInfo "" "" []) "" config
+    ( Model Loading config
     , fetchContent config id
     )
 
@@ -44,24 +43,16 @@ init config id =
 
 
 type Msg
-    = ShowContent (Result Http.Error Model)
+    = ShowArticle (WebData ArticleInfo)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ShowContent result ->
-            case result of
-                Ok content ->
-                    -- TODO: when came here directly, some loading image shold be shown
-                    ( content
-                    , Cmd.none
-                    )
-
-                Err _ ->
-                    ( model
-                    , Cmd.none
-                    )
+        ShowArticle result ->
+            ( { model | articleInfo = result }
+            , Cmd.none
+            )
 
 
 
@@ -70,21 +61,48 @@ update msg model =
 
 view : Model -> Html msg
 view model =
-    div []
-        [ div
-            [ class "siimple-jumbotron"
-            ]
-            [ div [ class "siimple-jumbotron-title" ] [ text model.articleInfo.title ]
-            , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ model.articleInfo.createdAt ]
-            , Keyed.node "div" [] (List.indexedMap viewTagElements model.articleInfo.tags)
-            ]
-        , div
-            [ class "siimple-rule"
-            , class "siimple--color-dark"
-            ]
-            []
-        , toHtmlWith options [] model.content
-        ]
+    let
+        article =
+            case model.articleInfo of
+                NotAsked ->
+                    [ div [] [] ]
+
+                Loading ->
+                    [ div
+                        [ class "siimple-spinner"
+                        , class "siimple-spinner--navy"
+                        ]
+                        [ text "Loading..." ]
+                    ]
+
+                Failure err ->
+                    case err of
+                        Http.Timeout ->
+                            [ div [] [ text "Time out" ] ]
+
+                        Http.BadStatus resp ->
+                            [ div [] [ text resp.body ] ]
+
+                        _ ->
+                            [ div [] [ text "Some Unexpected Error" ] ]
+
+                Success articleInfo ->
+                    [ div
+                        [ class "siimple-jumbotron"
+                        ]
+                        [ div [ class "siimple-jumbotron-title" ] [ text articleInfo.title ]
+                        , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ articleInfo.createdAt ]
+                        , Keyed.node "div" [] (List.indexedMap viewTagElements articleInfo.tags)
+                        ]
+                    , div
+                        [ class "siimple-rule"
+                        , class "siimple--color-dark"
+                        ]
+                        []
+                    , toHtmlWith options [] articleInfo.content
+                    ]
+    in
+    div [] article
 
 
 viewTagElements : Int -> String -> ( String, Html msg )
@@ -121,8 +139,8 @@ fetchContent config id =
     in
     -- I refer this redit
     -- https://www.reddit.com/r/elm/comments/91t937/is_it_possible_to_make_multiple_http_requests_in/
-    Task.attempt ShowContent <|
-        Task.map2 (\articleInfo content -> Model articleInfo content config) articleTask contentTask
+    Task.attempt (RemoteData.fromResult >> ShowArticle) <|
+        Task.map2 (\articleResult content -> ArticleInfo articleResult.title articleResult.createdAt articleResult.tags content) articleTask contentTask
 
 
 contentUrl : Config -> String -> String
@@ -139,9 +157,16 @@ articleUrl config id =
         []
 
 
-articleDecorder : Decode.Decoder ArticleInfo
+type alias ArticleResult =
+    { title : String
+    , createdAt : String
+    , tags : List String
+    }
+
+
+articleDecorder : Decode.Decoder ArticleResult
 articleDecorder =
-    Decode.map3 ArticleInfo
+    Decode.map3 ArticleResult
         (Decode.field "title" Decode.string)
         (Decode.field "added_at" Decode.string)
         (Decode.field "tag_names" (Decode.list Decode.string))
