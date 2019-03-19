@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Browser.Navigation as Nav
+import Config exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -33,15 +34,36 @@ main =
         }
 
 
+flagsDecorder : Decode.Decoder Config
+flagsDecorder =
+    Decode.map Config
+        (Decode.field "hostName" Decode.string)
+
+
+decodeFlags : Decode.Value -> Result Decode.Error Config
+decodeFlags flags =
+    Decode.decodeValue flagsDecorder flags
+
+
 type alias Model =
     { key : Nav.Key
     , page : Page
+    , config : Config
     }
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url key =
-    routeUrl url <| Model key <| ArticleListPage (ArticleList.Model RemoteData.NotAsked)
+init : Decode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
+    let
+        decodedConfig =
+            case decodeFlags flags of
+                Ok config ->
+                    config
+
+                Err _ ->
+                    Config ""
+    in
+    routeUrl url <| Model key (ArticleListPage (ArticleList.Model RemoteData.NotAsked decodedConfig)) decodedConfig
 
 
 type Page
@@ -66,7 +88,7 @@ routeUrl url model =
             result
 
         Nothing ->
-            ( { model | page = ArticleListPage (ArticleList.Model RemoteData.NotAsked) }
+            ( { model | page = ArticleListPage (ArticleList.Model RemoteData.NotAsked model.config) }
             , Cmd.none
             )
 
@@ -75,9 +97,9 @@ routeParser : Model -> Parser (( Model, Cmd Msg ) -> a) a
 routeParser model =
     oneOf
         [ route top
-            (stepArticleList model ArticleList.init)
+            (stepArticleList model <| ArticleList.init model.config)
         , route (s "article" </> string)
-            (\id -> stepArticle model (Article.init id))
+            (\id -> stepArticle model (Article.init model.config id))
         ]
 
 

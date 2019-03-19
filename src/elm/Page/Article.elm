@@ -1,5 +1,6 @@
 module Page.Article exposing (Model, Msg, init, update, view)
 
+import Config exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -18,6 +19,7 @@ import Url.Builder as UrlBuilder
 type alias Model =
     { articleInfo : ArticleInfo
     , content : String
+    , config : Config
 
     -- TOOD: ここでLoadking状態とかもたせればよさげ。
     }
@@ -30,10 +32,10 @@ type alias ArticleInfo =
     }
 
 
-init : String -> ( Model, Cmd Msg )
-init id =
-    ( Model (ArticleInfo "" "" []) ""
-    , fetchContent id
+init : Config -> String -> ( Model, Cmd Msg )
+init config id =
+    ( Model (ArticleInfo "" "" []) "" config
+    , fetchContent config id
     )
 
 
@@ -108,31 +110,31 @@ options =
 -- HTTP
 
 
-fetchContent : String -> Cmd Msg
-fetchContent id =
+fetchContent : Config -> String -> Cmd Msg
+fetchContent config id =
     let
         articleTask =
-            Http.get (articleUrl id) articleDecorder |> Http.toTask
+            Http.get (articleUrl config id) articleDecorder |> Http.toTask
 
         contentTask =
-            Http.getString (contentUrl id) |> Http.toTask
+            Http.getString (contentUrl config id) |> Http.toTask
     in
     -- I refer this redit
     -- https://www.reddit.com/r/elm/comments/91t937/is_it_possible_to_make_multiple_http_requests_in/
     Task.attempt ShowContent <|
-        Task.map2 (\articleInfo content -> Model articleInfo content) articleTask contentTask
+        Task.map2 (\articleInfo content -> Model articleInfo content config) articleTask contentTask
 
 
-contentUrl : String -> String
-contentUrl id =
-    UrlBuilder.crossOrigin "http://localhost:8080"
+contentUrl : Config -> String -> String
+contentUrl config id =
+    UrlBuilder.crossOrigin config.hostName
         [ "api", "articles", id, "content" ]
         []
 
 
-articleUrl : String -> String
-articleUrl id =
-    UrlBuilder.crossOrigin "http://localhost:8080"
+articleUrl : Config -> String -> String
+articleUrl config id =
+    UrlBuilder.crossOrigin config.hostName
         [ "api", "articles", id ]
         []
 

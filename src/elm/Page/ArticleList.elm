@@ -1,5 +1,6 @@
 module Page.ArticleList exposing (Model, Msg, init, update, view)
 
+import Config exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -16,6 +17,7 @@ import Url.Builder as UrlBuilder
 
 type alias Model =
     { articles : WebData (List Article)
+    , config : Config
     }
 
 
@@ -27,10 +29,10 @@ type alias Article =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model Loading
-    , fetchArticles
+init : Config -> ( Model, Cmd Msg )
+init config =
+    ( Model Loading config
+    , fetchArticles config
     )
 
 
@@ -52,7 +54,7 @@ update msg model =
             )
 
         ClickTag tag ->
-            ( model, fetchArticlesWithTag tag )
+            ( model, fetchArticlesWithTag model.config tag )
 
 
 
@@ -129,26 +131,26 @@ viewTagElements index tag =
 -- HTTP
 
 
-fetchArticles : Cmd Msg
-fetchArticles =
-    Http.send (RemoteData.fromResult >> ShowArticles) (Http.get articlesUrl articlesDecorder)
+fetchArticles : Config -> Cmd Msg
+fetchArticles config =
+    Http.send (RemoteData.fromResult >> ShowArticles) (Http.get (articlesUrl config) articlesDecorder)
 
 
-articlesUrl : String
-articlesUrl =
-    UrlBuilder.crossOrigin "http://localhost:8080"
+articlesUrl : Config -> String
+articlesUrl config =
+    UrlBuilder.crossOrigin config.hostName
         [ "api", "articles" ]
         []
 
 
-fetchArticlesWithTag : String -> Cmd Msg
-fetchArticlesWithTag tag =
-    Http.send (RemoteData.fromResult >> ShowArticles) (Http.get (articlesUrlWithTag tag) articlesDecorder)
+fetchArticlesWithTag : Config -> String -> Cmd Msg
+fetchArticlesWithTag config tag =
+    Http.send (RemoteData.fromResult >> ShowArticles) (Http.get (articlesUrlWithTag config tag) articlesDecorder)
 
 
-articlesUrlWithTag : String -> String
-articlesUrlWithTag tag =
-    UrlBuilder.crossOrigin "http://localhost:8080"
+articlesUrlWithTag : Config -> String -> String
+articlesUrlWithTag config tag =
+    UrlBuilder.crossOrigin config.hostName
         [ "api", "articles" ]
         [ UrlBuilder.string "tags" tag ]
 
