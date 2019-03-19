@@ -9,6 +9,5 @@ window.hljs = hljs
 const { Elm } = require('./elm/Main.elm');
 Elm.Main.init({
   node: document.getElementById('main'),
-  // TODO: define this config on env variable
-  flags: { hostName: "http://localhost:8080" }
+  flags: { hostName: process.env.BLOG_HOST_NAME }
 });

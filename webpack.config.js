@@ -85,7 +85,10 @@ if (MODE === "development") {
             // Suggested for hot-loading
             new webpack.NamedModulesPlugin(),
             // Prevents compilation errors causing the hot loader to lose state
-            new webpack.NoEmitOnErrorsPlugin()
+            new webpack.NoEmitOnErrorsPlugin(),
+            new webpack.EnvironmentPlugin({
+              BLOG_HOST_NAME: 'http://localhost:8080'
+            })
         ],
         module: {
             rules: [
@@ -131,6 +134,9 @@ if (MODE === "production") {
     console.log("Building for Production...");
     module.exports = merge(common, {
         plugins: [
+            new webpack.EnvironmentPlugin({
+              BLOG_HOST_NAME: 'http://localhost:8080'
+            }),
             // Minify elm code
             // TODO: when this plugin is enabled, build is failed
             //new elmMinify.WebpackPlugin(),
