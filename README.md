@@ -16,3 +16,9 @@ $ npm start
 ```
 $ npm run build
 ```
+
+## configs
+you can change the follwoing configs with environment variable
+
+* BLOG_HOST_NAME: the hostname of API
+  * e.g .https://xxxxx.xx
