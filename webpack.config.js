@@ -18,7 +18,7 @@ var common = {
     mode: MODE,
     entry: "./src/index.js",
     output: {
-        path: path.join(__dirname, "dist"),
+        path: path.join(__dirname, "docs"),
         publicPath: "/",
         // webpack -p automatically adds hash when building for production
         filename: filename
@@ -140,8 +140,8 @@ if (MODE === "production") {
             // Minify elm code
             // TODO: when this plugin is enabled, build is failed
             //new elmMinify.WebpackPlugin(),
-            // Delete everything from /dist directory and report to user
-            new CleanWebpackPlugin(["dist"], {
+            // Delete everything from /docs directory and report to user
+            new CleanWebpackPlugin(["docs"], {
                 root: __dirname,
                 exclude: [],
                 verbose: true,
