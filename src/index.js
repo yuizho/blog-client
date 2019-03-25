@@ -9,5 +9,8 @@ window.hljs = hljs
 const { Elm } = require('./elm/Main.elm');
 Elm.Main.init({
   node: document.getElementById('main'),
-  flags: { hostName: process.env.BLOG_HOST_NAME }
+  flags: {
+    hostName: process.env.BLOG_HOST_NAME,
+    rootPath: process.env.BLOG_ROOT_PATH
+  }
 });

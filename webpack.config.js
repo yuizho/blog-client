@@ -19,7 +19,7 @@ var common = {
     entry: "./src/index.js",
     output: {
         path: path.join(__dirname, "docs"),
-        publicPath: "./",
+        publicPath: "",
         // webpack -p automatically adds hash when building for production
         filename: filename
     },
@@ -87,7 +87,8 @@ if (MODE === "development") {
             // Prevents compilation errors causing the hot loader to lose state
             new webpack.NoEmitOnErrorsPlugin(),
             new webpack.EnvironmentPlugin({
-              BLOG_HOST_NAME: 'http://localhost:8080'
+              BLOG_HOST_NAME: 'http://localhost:8080',
+              BLOG_ROOT_PATH: '/'
             })
         ],
         module: {
@@ -135,7 +136,8 @@ if (MODE === "production") {
     module.exports = merge(common, {
         plugins: [
             new webpack.EnvironmentPlugin({
-              BLOG_HOST_NAME: 'http://localhost:8080'
+              BLOG_HOST_NAME: 'http://localhost:8080',
+              BLOG_ROOT_PATH: '/'
             }),
             // Minify elm code
             // TODO: when this plugin is enabled, build is failed

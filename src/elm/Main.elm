@@ -36,8 +36,9 @@ main =
 
 flagsDecorder : Decode.Decoder Config
 flagsDecorder =
-    Decode.map Config
+    Decode.map2 Config
         (Decode.field "hostName" Decode.string)
+        (Decode.field "rootPath" Decode.string)
 
 
 decodeFlags : Decode.Value -> Result Decode.Error Config
@@ -61,7 +62,7 @@ init flags url key =
                     config
 
                 Err _ ->
-                    Config ""
+                    Config "" "/"
     in
     routeUrl url <| Model key (ArticleListPage (ArticleList.Model RemoteData.NotAsked decodedConfig)) decodedConfig
 
@@ -196,26 +197,26 @@ view model =
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.page of
         ArticleListPage subModel ->
-            baseHtml title (Html.map (\subMsg -> ArticleListUpdate subMsg) <| ArticleList.view subModel)
+            baseHtml model.config title (Html.map (\subMsg -> ArticleListUpdate subMsg) <| ArticleList.view subModel)
 
         ArticlePage subModel ->
-            baseHtml title <| Article.view subModel
+            baseHtml model.config title <| Article.view subModel
 
 
-baseHtml title content =
+baseHtml config title content =
     { title = title
-    , body = baseView title <| content
+    , body = baseView config title content
     }
 
 
-baseView : String -> Html msg -> List (Html msg)
-baseView title container =
+baseView : Config -> String -> Html msg -> List (Html msg)
+baseView config title container =
     [ div
         [ class "siimple-navbar"
         , class "siimple-navbar--large"
         , class "siimple-navbar--dark"
         ]
-        [ a [ class "siimple-navbar-title ", href "/" ] [ text title ]
+        [ a [ class "siimple-navbar-title ", href config.rootPath ] [ text title ]
         ]
     , div
         [ class "siimple-content"
