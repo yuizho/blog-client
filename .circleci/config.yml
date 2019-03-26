@@ -8,6 +8,8 @@ jobs:
     filters:
       branches:
         only: master
+      tags:
+        ignore: /^v.*/
     docker:
       # specify the version you desire here
       - image: circleci/node:11
@@ -44,4 +46,5 @@ jobs:
       - run: git config user.name "yuizho-circleci"
       - run: git add -A
       - run: git commit -m "commit built files to do production build"
+      - run: git tag -a "v$(date '+%Y%m%d%H%M%S')"
       - run: git push origin master
