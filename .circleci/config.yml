@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  build-deploy:
+  build:
     filters:
       branches:
         only: master
