@@ -9,6 +9,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as Decode
 import Markdown exposing (Options, defaultOptions, toHtmlWith)
+import Page.About as About
 import Page.Article as Article
 import Page.ArticleList as ArticleList
 import RemoteData
@@ -70,6 +71,7 @@ init flags url key =
 type Page
     = ArticleListPage ArticleList.Model
     | ArticlePage Article.Model
+    | AboutPage About.Model
 
 
 routeUrl : Url.Url -> Model -> ( Model, Cmd Msg )
@@ -101,6 +103,7 @@ routeParser model =
             (stepArticleList model <| ArticleList.init model.config)
         , route (s "article" </> string)
             (\id -> stepArticle model (Article.init model.config id))
+        , route (s "about") (stepAbout model (About.init model.config))
         ]
 
 
@@ -120,6 +123,13 @@ stepArticle : Model -> ( Article.Model, Cmd Article.Msg ) -> ( Model, Cmd Msg )
 stepArticle model ( article, cmds ) =
     ( { model | page = ArticlePage article }
     , Cmd.map GoArticle cmds
+    )
+
+
+stepAbout : Model -> ( About.Model, Cmd msg ) -> ( Model, Cmd Msg )
+stepAbout model ( article, cmds ) =
+    ( { model | page = AboutPage article }
+    , Cmd.none
     )
 
 
@@ -191,7 +201,7 @@ view : Model -> Browser.Document Msg
 view model =
     let
         title =
-            "日常の記録"
+            "J'aime des ramens"
     in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
@@ -201,6 +211,9 @@ view model =
 
         ArticlePage subModel ->
             baseHtml model.config title <| Article.view subModel
+
+        AboutPage subModel ->
+            baseHtml model.config title <| About.view subModel
 
 
 baseHtml config title content =
@@ -217,6 +230,8 @@ baseView config title container =
         , class "siimple-navbar--dark"
         ]
         [ a [ class "siimple-navbar-title ", href config.rootPath ] [ text title ]
+        , div [ class "siimple--float-right" ]
+            [ a [ class "siimple-navbar-item", href "#/about" ] [ text "About" ] ]
         ]
     , div
         [ class "siimple-content"
