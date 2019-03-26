@@ -102,7 +102,7 @@ view model =
                     , toHtmlWith options [] articleInfo.content
                     ]
     in
-    div [] article
+    div [ class "siimple-content--medium" ] article
 
 
 viewTagElements : Int -> String -> ( String, Html msg )
