@@ -201,7 +201,7 @@ view : Model -> Browser.Document Msg
 view model =
     let
         title =
-            "J'aime des ramens"
+            "J'aime les ramens"
     in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
