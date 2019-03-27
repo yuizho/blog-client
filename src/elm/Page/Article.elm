@@ -1,4 +1,4 @@
-module Page.Article exposing (Model, Msg, init, update, view)
+port module Page.Article exposing (Model, Msg, init, update, view)
 
 import Config exposing (..)
 import Html exposing (..)
@@ -11,6 +11,13 @@ import Markdown exposing (Options, defaultOptions, toHtmlWith)
 import RemoteData exposing (RemoteData(..), WebData)
 import Task
 import Url.Builder as UrlBuilder
+
+
+
+-- ports
+
+
+port addWidgets : () -> Cmd msg
 
 
 
@@ -51,7 +58,7 @@ update msg model =
     case msg of
         ShowArticle result ->
             ( { model | articleInfo = result }
-            , Cmd.none
+            , addWidgets ()
             )
 
 
@@ -99,6 +106,7 @@ view model =
                         ]
                         []
                     , toHtmlWith options [] articleInfo.content
+                    , div [ id "widgets", align "right" ] []
                     ]
     in
     div [ class "siimple-content--large" ] article
