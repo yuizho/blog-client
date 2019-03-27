@@ -42,9 +42,20 @@ jobs:
       - run: yarn run prod
 
       # deploy
-      - run: git config user.email "yuizho3@gmail.com"
-      - run: git config user.name "yuizho-circleci"
-      - run: git add -A
-      - run: git commit -m "commit built files to do production build"
-      - run: git tag -a "v$(date '+%Y%m%d%H%M%S')"
-      - run: git push origin master
+      - run:
+          name: configure git account
+          command: |
+            git config user.email "yuizho3@gmail.com"
+            git config user.name "yuizho-circleci"
+      - run:
+          name: git commit & push (deploy)
+          command: |
+            if [ -n "$(git status --porcelain)" ]; then
+              echo 'start deployment'
+              git add -A
+              git commit -m "commit built files to do production build"
+              git tag -a "v$(date '+%Y%m%d%H%M%S')"
+              git push origin master
+            else
+              echo 'skip deployment'
+            fi
