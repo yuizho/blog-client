@@ -88,8 +88,7 @@ view model =
 
                 Success articleInfo ->
                     [ div
-                        [ class "siimple-jumbotron"
-                        ]
+                        []
                         [ div [ class "siimple-jumbotron-title" ] [ text articleInfo.title ]
                         , div [ class "siimple-jumbotron-detail" ] [ text <| "Posted at " ++ articleInfo.createdAt ]
                         , Keyed.node "div" [] (List.indexedMap viewTagElements articleInfo.tags)
@@ -102,7 +101,7 @@ view model =
                     , toHtmlWith options [] articleInfo.content
                     ]
     in
-    div [ class "siimple-content--medium" ] article
+    div [ class "siimple-content--large" ] article
 
 
 viewTagElements : Int -> String -> ( String, Html msg )
@@ -110,7 +109,7 @@ viewTagElements index tag =
     ( String.fromInt index
     , span
         [ class "siimple-tag"
-        , class "siimple-tag--primary"
+        , class "siimple-tag--light"
         , class "siimple-tag--rounded"
         , class "siimple--mt-2"
         , class "siimple--mr-1"

@@ -114,7 +114,7 @@ viewTagElements index tag =
     ( String.fromInt index
     , span
         [ class "siimple-tag"
-        , class "siimple-tag--primary"
+        , class "siimple-tag--light"
         , class "siimple-tag--rounded"
         , class "siimple--mt-2"
         , class "siimple--mr-1"
