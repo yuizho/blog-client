@@ -8,8 +8,6 @@ jobs:
     filters:
       branches:
         only: master
-      tags:
-        ignore: /^v.*/
     docker:
       # specify the version you desire here
       - image: circleci/node:11
@@ -53,8 +51,7 @@ jobs:
             if [ -n "$(git status --porcelain)" ]; then
               echo 'start deployment'
               git add -A
-              git commit -m "commit built files to do production build"
-              git tag -a "v$(date '+%Y%m%d%H%M%S')"
+              git commit -m "[skip ci] deploy production archivement"
               git push origin master
             else
               echo 'skip deployment'
