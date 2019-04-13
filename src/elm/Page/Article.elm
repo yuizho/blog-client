@@ -144,7 +144,6 @@ fetchContent config id =
         contentTask =
             Http.getString (contentUrl config id) |> Http.toTask
     in
-    -- I refer this redit
     -- https://www.reddit.com/r/elm/comments/91t937/is_it_possible_to_make_multiple_http_requests_in/
     Task.attempt (RemoteData.fromResult >> ShowArticle) <|
         Task.map2 (\articleResult content -> ArticleInfo articleResult.title articleResult.createdAt articleResult.tags content) articleTask contentTask
