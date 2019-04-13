@@ -11,7 +11,8 @@ const app = Elm.Main.init({
   node: document.getElementById('main'),
   flags: {
     hostName: process.env.BLOG_HOST_NAME,
-    rootPath: process.env.BLOG_ROOT_PATH
+    rootPath: process.env.BLOG_ROOT_PATH,
+    defaultTitle: "J'aime les ramens"
   }
 });
 

@@ -12,7 +12,7 @@ import Markdown exposing (Options, defaultOptions, toHtmlWith)
 import Page.About as About
 import Page.Article as Article
 import Page.ArticleList as ArticleList
-import RemoteData
+import RemoteData exposing (RemoteData(..))
 import Task
 import Tuple
 import Url
@@ -37,9 +37,10 @@ main =
 
 flagsDecorder : Decode.Decoder Config
 flagsDecorder =
-    Decode.map2 Config
+    Decode.map3 Config
         (Decode.field "hostName" Decode.string)
         (Decode.field "rootPath" Decode.string)
+        (Decode.field "defaultTitle" Decode.string)
 
 
 decodeFlags : Decode.Value -> Result Decode.Error Config
@@ -63,7 +64,7 @@ init flags url key =
                     config
 
                 Err _ ->
-                    Config "" "/"
+                    Config "" "/" ""
     in
     routeUrl url <| Model key (ArticleListPage (ArticleList.Model RemoteData.NotAsked decodedConfig)) decodedConfig
 
@@ -199,37 +200,43 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        title =
-            "J'aime les ramens"
-    in
     -- decide view with Model Type
     -- refer: https://github.com/rtfeldman/elm-spa-example/blob/ad14ff6f8e50789ba59d8d2b17929f0737fc8373/src/Main.elm#L62
     case model.page of
         ArticleListPage subModel ->
-            baseHtml model.config title (Html.map (\subMsg -> ArticleListUpdate subMsg) <| ArticleList.view subModel)
+            baseHtml model.config model.config.defaultTitle (Html.map (\subMsg -> ArticleListUpdate subMsg) <| ArticleList.view subModel)
 
         ArticlePage subModel ->
-            baseHtml model.config title <| Article.view subModel
+            -- when each article page is shown, article's title will be set to title tag
+            let
+                articleTitle =
+                    case subModel.articleInfo of
+                        Success articleInfo ->
+                            articleInfo.title
+
+                        _ ->
+                            model.config.defaultTitle
+            in
+            baseHtml model.config articleTitle <| Article.view subModel
 
         AboutPage subModel ->
-            baseHtml model.config title <| About.view subModel
+            baseHtml model.config model.config.defaultTitle <| About.view subModel
 
 
 baseHtml config title content =
     { title = title
-    , body = baseView config title content
+    , body = baseView config content
     }
 
 
-baseView : Config -> String -> Html msg -> List (Html msg)
-baseView config title container =
+baseView : Config -> Html msg -> List (Html msg)
+baseView config container =
     [ div
         [ class "siimple-navbar"
         , class "siimple-navbar--large"
         , class "siimple-navbar--dark"
         ]
-        [ a [ class "siimple-navbar-title ", href config.rootPath ] [ text title ]
+        [ a [ class "siimple-navbar-title ", href config.rootPath ] [ text config.defaultTitle ]
         , div [ class "siimple--float-right" ]
             [ a [ class "siimple-navbar-item", href "#/about" ] [ text "About" ] ]
         ]
