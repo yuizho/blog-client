@@ -12,7 +12,7 @@ const app = Elm.Main.init({
   flags: {
     hostName: process.env.BLOG_HOST_NAME,
     rootPath: process.env.BLOG_ROOT_PATH,
-    defaultTitle: "J'aime les ramens"
+    defaultTitle: process.env.BLOG_TITLE
   }
 });
 

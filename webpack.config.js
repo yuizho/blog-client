@@ -13,6 +13,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 var MODE =
     process.env.npm_lifecycle_event === "prod" ? "production" : "development";
 var filename = MODE == "production" ? "[name]-[hash].js" : "index.js";
+const TITLE = "J'aime les ramens";
 
 var common = {
     mode: MODE,
@@ -28,7 +29,8 @@ var common = {
             // Use this template to get basic responsive meta tags
             template: "src/index.html",
             // inject details of output file at end of body
-            inject: "body"
+            inject: "body",
+            title: TITLE
         })
     ],
     resolve: {
@@ -88,7 +90,8 @@ if (MODE === "development") {
             new webpack.NoEmitOnErrorsPlugin(),
             new webpack.EnvironmentPlugin({
               BLOG_HOST_NAME: 'http://localhost:8080',
-              BLOG_ROOT_PATH: '/'
+              BLOG_ROOT_PATH: '/',
+              BLOG_TITLE: TITLE
             })
         ],
         module: {
@@ -137,7 +140,8 @@ if (MODE === "production") {
         plugins: [
             new webpack.EnvironmentPlugin({
               BLOG_HOST_NAME: 'http://localhost:8080',
-              BLOG_ROOT_PATH: '/'
+              BLOG_ROOT_PATH: '/',
+              BLOG_TITLE: TITLE
             }),
             // Minify elm code
             // TODO: when this plugin is enabled, build is failed
