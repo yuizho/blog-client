@@ -30,7 +30,12 @@ var common = {
             template: "src/index.html",
             // inject details of output file at end of body
             inject: "body",
-            title: TITLE
+            title: TITLE,
+            meta: {
+                url: "https://yuizho.github.io/blog",
+                description: "@yuizhoのブログ",
+                image: "yuizho.jpeg"
+            }
         })
     ],
     resolve: {

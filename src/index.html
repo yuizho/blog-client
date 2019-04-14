@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta property="og:url" content="<%= htmlWebpackPlugin.options.meta.url %>" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>"/>
+    <meta property="og:description" content="<%= htmlWebpackPlugin.options.meta.description %>" />
+    <meta property="og:site_name" content="<%= htmlWebpackPlugin.options.title %>" />
+    <meta property="og:image" content="<%= process.env.BLOG_HOST_NAME + process.env.BLOG_ROOT_PATH + htmlWebpackPlugin.options.meta.image %>" />
     <link rel="shortcut icon" href="favicon.ico">
     <title><%= htmlWebpackPlugin.options.title %></title>
 </head>
