@@ -9,7 +9,7 @@
     <meta property="og:title" content="<%= htmlWebpackPlugin.options.title %>"/>
     <meta property="og:description" content="<%= htmlWebpackPlugin.options.meta.description %>" />
     <meta property="og:site_name" content="<%= htmlWebpackPlugin.options.title %>" />
-    <meta property="og:image" content="<%= process.env.BLOG_HOST_NAME + process.env.BLOG_ROOT_PATH + htmlWebpackPlugin.options.meta.image %>" />
+    <meta property="og:image" content="<%= htmlWebpackPlugin.options.meta.url + htmlWebpackPlugin.options.meta.image %>" />
     <link rel="shortcut icon" href="favicon.ico">
     <title><%= htmlWebpackPlugin.options.title %></title>
 </head>

@@ -32,7 +32,7 @@ var common = {
             inject: "body",
             title: TITLE,
             meta: {
-                url: "https://yuizho.github.io/blog",
+                url: "https://yuizho.github.io/blog/",
                 description: "@yuizhoのブログ",
                 image: "yuizho.jpeg"
             }
