@@ -36,26 +36,5 @@ app.ports.addWidgets.subscribe(function() {
     twitterWidget.appendChild(twitterA);
     twitterWidget.appendChild(twitterScript);
     widgets.appendChild(twitterWidget);
-
-    // hatena bookmark widget
-    let hatenaWidget = document.createElement('span');
-    hatenaWidget.setAttribute("style", "margin-left: 5px;");
-    let hatenaA = document.createElement('a');
-    hatenaA.setAttribute("href", "http://b.hatena.ne.jp/entry/");
-    hatenaA.setAttribute("class", "hatena-bookmark-button");
-    hatenaA.setAttribute("data-hatena-bookmark-layout", "basic-counter");
-    let hatenaImg = document.createElement('img');
-    hatenaImg.setAttribute("src", "https://b.st-hatena.com/images/v4/public/entry-button/button-only@2x.png");
-    hatenaImg.setAttribute("width", "20");
-    hatenaImg.setAttribute("height", "20");
-    hatenaImg.setAttribute("style", "border: none;");
-    hatenaA.appendChild(hatenaImg);
-    let hatenaScript = document.createElement('script');
-    hatenaScript.setAttribute("async", "async")
-    hatenaScript.setAttribute("src", "https://b.st-hatena.com/js/bookmark_button.js")
-    hatenaScript.setAttribute("charset", "utf-8")
-    hatenaWidget.appendChild(hatenaA);
-    hatenaWidget.appendChild(hatenaScript);
-    widgets.appendChild(hatenaWidget);
   });
 });
